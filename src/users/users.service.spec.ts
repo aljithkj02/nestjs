@@ -7,12 +7,22 @@ describe('UsersService', () => {
   let service: UsersService; 
 
   const mockUserRepository = {
+    data: [{id: 1, name: 'Aljith'}, { id: 2, name: 'Jithu'}],
     create: jest.fn().mockImplementation(dto => dto),
     save: jest.fn().mockImplementation(user => {
       return Promise.resolve({
         id: Date.now(),
         ...user
       })
+    }),
+    findOne: jest.fn(function({ where: { id }}){
+      if(id >= this.data.length) {
+        return undefined;
+      }
+      console.log(id);
+      return Promise.resolve({
+        ...this.data[id]
+      });
     })
   }
 
@@ -45,5 +55,16 @@ describe('UsersService', () => {
         name: dto.name
       })
     })
+  })
+
+  // it('should return throw an error', async () => {
+  //   const findOne = async () => {
+  //     return await service.findOne(2);
+  //   }
+  //   expect(findOne).toThrowError();
+  // })
+
+  it('should return a user', async () => {
+    expect(await service.findOne(1)).toEqual(mockUserRepository.data[1]);
   })
 });

@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { INestApplication, ValidationPipe } from '@nestjs/common';
+import { INestApplication, NotFoundException, ValidationPipe } from '@nestjs/common';
 import * as request from 'supertest';
 import { UsersModule } from '../src/users/users.module';
 import { getRepositoryToken } from '@nestjs/typeorm';
@@ -8,7 +8,7 @@ import { User } from '../src/users/entities/user.entity';
 describe('UsersController (e2e)', () => {
   let app: INestApplication;
 
-  const mockUsers = [ { id: 1, name: "Aljith"} ]
+  const mockUsers = [ { id: 1, name: "Aljith"}, { id:2, name: 'Jithu'} ];
 
   const mockUserRepository = {
     find: jest.fn().mockResolvedValue(mockUsers),
@@ -18,8 +18,14 @@ describe('UsersController (e2e)', () => {
             id: Date.now(),
             name: dto.name
         }
+    }),
+    findOne: jest.fn(( {where: { id }}) => {
+      if(id >= mockUsers.length){
+        throw new NotFoundException('No such user');
+      }
+      return mockUsers[id];
     })
-  }
+  } 
 
   beforeEach(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -65,4 +71,17 @@ describe('UsersController (e2e)', () => {
         "error": "Bad Request"
     })
   })
+
+  it('users/2 (GET) --> 404 on Not found error', () => {
+    return request(app.getHttpServer())
+    .get('/users/2')
+    .expect(404)
+  })
+
+  it('users/1 (GET) --> return an user', () => {
+    return request(app.getHttpServer())
+    .get('/users/1')
+    .expect(mockUsers[1]);
+  })
 });
+ 
